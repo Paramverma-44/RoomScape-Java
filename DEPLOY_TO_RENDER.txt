@@ -1,0 +1,13 @@
+RENDER DEPLOYMENT — JAVA / SPRING BOOT
+
+1. Extract this ZIP.
+2. Upload all extracted files to a new GitHub repository.
+3. Open Render Dashboard.
+4. Select New + > Blueprint and connect the repository.
+5. Approve the service defined in render.yaml.
+6. Wait for Docker build and deployment to finish.
+7. Open the Render URL.
+
+Alternative: New + > Web Service, connect repository, choose Docker runtime, deploy.
+
+This project requires no database, no API key, and no JavaScript. Render builds it using the included Dockerfile.

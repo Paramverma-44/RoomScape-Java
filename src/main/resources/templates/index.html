@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RoomScape — Java Room Designer</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/drag.js" defer></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/"><span class="brand-mark">R</span><span><b>RoomScape</b><small>JAVA ROOM DESIGNER</small></span></a>
+  <div class="top-actions"><span class="runtime">● Java + Spring Boot</span><a class="button button-light" href="/room/export">Export .room</a><form action="/room/reset" method="post"><button class="button button-dark" type="submit">Reset room</button></form></div>
+</header>
+<main class="layout">
+  <aside class="sidebar">
+    <div class="eyebrow">YOUR WORKSPACE</div>
+    <h1>Design a room.</h1><p class="muted">Arrange furniture, choose finishes, and build a layout. Every change is processed by Java on the server.</p>
+    <section class="panel">
+      <div class="section-title"><span>01</span><h2>Room details</h2></div>
+      <form action="/room/name" method="post" class="stack"><label for="name">Room name</label><input id="name" name="name" maxlength="60" th:value="${room.roomName}" required><button class="button button-outline" type="submit">Update name</button></form>
+      <form action="/room/colors" method="post" class="color-grid"><label>Wall color<input type="color" name="wallColor" th:value="${room.wallColor}"></label><label>Floor color<input type="color" name="floorColor" th:value="${room.floorColor}"></label><button class="button button-outline full" type="submit">Apply finishes</button></form>
+    </section>
+    <section class="panel">
+      <div class="section-title"><span>02</span><h2>Add furniture</h2></div>
+      <p class="muted small">Choose an item to add it to the room plan.</p>
+      <form action="/furniture/add" method="post" class="stack"><label for="type">Furniture type</label><select id="type" name="type"><option value="sofa">Sofa</option><option value="chair">Chair</option><option value="bed">Bed</option><option value="dining-table">Dining table</option><option value="coffee-table">Coffee table</option><option value="wardrobe">Wardrobe</option><option value="bookshelf">Bookshelf</option><option value="tv">TV unit</option><option value="plant">Plant</option><option value="lamp">Floor lamp</option><option value="rug">Rug</option><option value="window">Window</option><option value="door">Door</option><option value="cabinet">Cabinet</option></select><button class="button button-primary" type="submit">＋ Add to room</button></form>
+    </section>
+    <section class="panel furniture-list-panel">
+      <div class="section-title"><span>03</span><h2>Furniture list</h2><span class="count" th:text="${room.furnitureCount}">0</span></div>
+      <div class="furniture-list" th:if="${!room.furniture.isEmpty()}">
+        <form th:each="item : ${room.furniture}" action="/furniture/select" method="post">
+          <input type="hidden" name="id" th:value="${item.id}"><button class="furniture-row" th:classappend="${item.id == room.selectedId} ? ' selected' : ''" type="submit"><span class="swatch" th:style="|background: ${item.safeColor}|"></span><span class="furniture-name"><b th:text="${item.label}">Sofa</b><small th:text="'X ' + ${item.x} + ' · Y ' + ${item.y}">X 0 · Y 0</small></span><span class="chevron">›</span></button>
+        </form>
+      </div>
+      <p class="muted small" th:if="${room.furniture.isEmpty()}">No furniture yet. Add an item above.</p>
+    </section>
+    <p class="footer-note">Built with Java 17 · Spring Boot · Thymeleaf</p>
+  </aside>
+
+  <section class="workspace">
+    <div class="workspace-head"><div><span class="eyebrow">LIVE ROOM PLAN</span><h2 th:text="${room.roomName}">My Living Room</h2></div><div class="room-meta"><span class="status-dot"></span><span th:text="${room.furnitureCount} + ' objects'">4 objects</span><span>·</span><span>480 × 320 units</span></div></div>
+    <div class="canvas-wrap">
+      <svg class="room-canvas" viewBox="0 0 520 370" role="img" aria-label="Top-down room plan">
+        <defs><pattern id="floorGrid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M 24 0 L 0 0 0 24" fill="none" stroke="#9b8b7a" stroke-opacity=".18" stroke-width="1"/></pattern><filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity=".12"/></filter></defs>
+        <rect x="0" y="0" width="520" height="370" rx="5" th:attr="fill=${room.wallColor}"/>
+        <rect x="20" y="20" width="480" height="320" rx="3" th:attr="fill=${room.floorColor}"/>
+        <rect x="20" y="20" width="480" height="320" fill="url(#floorGrid)"/>
+        <rect x="20" y="20" width="480" height="320" fill="none" stroke="#817568" stroke-width="8"/>
+        <rect x="205" y="16" width="105" height="9" rx="2" fill="#d6f0f8" stroke="#5c9fb3" stroke-width="2"/><line x1="257" y1="18" x2="257" y2="23" stroke="#5c9fb3" stroke-width="2"/>
+        <g class="room-item" tabindex="0" role="button" aria-label="Drag furniture to move it" th:each="item : ${room.furniture}" th:attr="transform=${item.svgTransform},data-id=${item.id},data-x=${item.x},data-y=${item.y}" filter="url(#shadow)">
+          <rect th:attr="x=${-item.width / 2},y=${-item.height / 2},width=${item.width},height=${item.height},rx=${item.type == 'plant' ? 20 : 5},fill=${item.safeColor}" stroke="#4b4946" stroke-width="1.4" th:stroke-width="${item.id == room.selectedId ? 3 : 1.4}" th:stroke="${item.id == room.selectedId ? '#3b82f6' : '#4b4946'}"/>
+          <g th:if="${item.type == 'sofa'}"><line th:attr="x1=${-item.width/2+12},y1=${-item.height/2+10},x2=${item.width/2-12},y2=${-item.height/2+10}" stroke="#ffffff" stroke-opacity=".6" stroke-width="3"/><line th:attr="x1=${-item.width/2+12},y1=${item.height/2-10},x2=${item.width/2-12},y2=${item.height/2-10}" stroke="#ffffff" stroke-opacity=".6" stroke-width="3"/></g>
+          <g th:if="${item.type == 'bed'}"><rect th:attr="x=${-item.width/2+8},y=${-item.height/2+7},width=${item.width-16},height=25" rx="4" fill="#ffffff" fill-opacity=".65"/><line th:attr="x1=${-item.width/2+8},y1=${-item.height/2+38},x2=${item.width/2-8},y2=${-item.height/2+38}" stroke="#ffffff" stroke-width="2"/></g>
+          <g th:if="${item.type == 'plant'}"><circle r="10" fill="#4d8651"/><circle cx="-8" cy="-4" r="7" fill="#5b965b"/><circle cx="8" cy="-5" r="7" fill="#477c4b"/></g>
+          <text x="0" y="4" text-anchor="middle" font-size="10" font-family="Arial,sans-serif" font-weight="600" fill="#282725" th:text="${item.label}" th:if="${item.type != 'plant' and item.type != 'rug' and item.type != 'window' and item.type != 'door'}">Sofa</text>
+          <circle cx="0" cy="0" r="3" fill="#ffffff" stroke="#4b4946" stroke-width="1" th:if="${item.id == room.selectedId}"/>
+        </g>
+        <text x="28" y="356" fill="#817568" font-size="9" letter-spacing="1.5">TOP-DOWN FLOOR PLAN</text>
+      </svg>
+    </div>
+    <div class="canvas-caption"><span><i class="legend-selected"></i> Selected furniture</span><span>Tip: click and drag furniture to move it. Select an item to edit its properties.</span></div>
+    <section class="editor panel" th:if="${room.selected != null}">
+      <div class="editor-heading"><div><span class="eyebrow">SELECTED OBJECT</span><h3 th:text="${room.selected.label}">Sofa</h3></div><form action="/furniture/delete" method="post"><button class="button button-danger" type="submit">Delete item</button></form></div>
+      <div class="editor-grid">
+        <form action="/furniture/move" method="post" class="stack"><h4>Position</h4><div class="two-fields"><label>X coordinate<input type="number" name="x" min="0" max="480" th:value="${room.selected.x}" required></label><label>Y coordinate<input type="number" name="y" min="0" max="320" th:value="${room.selected.y}" required></label></div><button class="button button-outline" type="submit">Apply position</button></form>
+        <form action="/furniture/resize" method="post" class="stack"><h4>Size</h4><div class="two-fields"><label>Width<input type="number" name="width" min="24" max="190" th:value="${room.selected.width}" required></label><label>Height<input type="number" name="height" min="16" max="150" th:value="${room.selected.height}" required></label></div><button class="button button-outline" type="submit">Apply size</button></form>
+        <form action="/furniture/color" method="post" class="stack"><h4>Appearance</h4><label>Furniture color<input type="color" name="color" th:value="${room.selected.safeColor}"></label><button class="button button-outline" type="submit">Apply color</button></form>
+        <form action="/furniture/rotate" method="post" class="stack"><h4>Orientation</h4><p class="muted small">Current rotation: <b th:text="${room.selected.rotation} + '°'">0°</b></p><button class="button button-outline" type="submit">↻ Rotate 45°</button></form>
+      </div>
+    </section>
+    <section class="panel empty-editor" th:if="${room.selected == null}"><h3>Select a furniture item</h3><p class="muted">Choose an item from the list or add a new one to edit its properties.</p></section>
+    <div class="bottom-note"><b>Java-powered design workspace</b><span>Java + Spring Boot manages your room; browser interactions enable drag-and-drop.</span></div>
+  </section>
+</main>
+</body>
+</html>

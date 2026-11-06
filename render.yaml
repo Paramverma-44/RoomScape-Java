@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: virtual-interior-room-designer-java
+    runtime: docker
+    plan: free
+    healthCheckPath: /
